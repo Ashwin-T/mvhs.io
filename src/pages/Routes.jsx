@@ -1,56 +1,30 @@
 import React from "react";
-import { useState, useEffect, Suspense } from "react";
+import { Suspense, useState } from "react";
 
 import Navbar from "../components/navbar/Navbar";
 import Loading from "../components/loading/Loading";
 import Home from "./home/Home";
-import {app} from "../tools/Firebase";
-
-import Map from "./map/Map"; //too slow without
+import AddToMobile from "../components/addToMobile/AddToMobile";
 
 const StaticMap = React.lazy(() => import("./map/StaticMap"));
 const Setting = React.lazy(() => import("./setting/Setting"));
 const Resources = React.lazy(() => import("./resources/Resources"));
 const NotFound = React.lazy(() => import( "./notFound/NotFound"));
 const Version = React.lazy(() => import("./version/Version"));
-
-import { doc, getDoc, getFirestore } from "firebase/firestore";
-import { getAuth } from "@firebase/auth";
+const Utilities = React.lazy(() => import("./utilities/Utilities"));
+const Map = React.lazy(() => import("./map/Map"));
 
 import { Route, Routes } from "react-router-dom";
 
-const db = getFirestore(app);
-const auth = getAuth(app);
-
 const AppRoutes = () => {
-    const [dontRedirect, setDontRedirect] = useState(false);
-    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        setLoading(true);
+    function isRunningStandalone() {
+        return (window.matchMedia('(display-mode: standalone)').matches);
+    }
 
-        const checkData = async () => {
-            if (auth.currentUser == null) {
-                return;
-            }
-            const docRef = doc(db, "users", auth.currentUser.uid);
-            const docSnap = await getDoc(docRef);
+    const [hasAdded, setHasAdded] = useState(!isRunningStandalone());
 
-            if (docSnap.exists()) {
-                localStorage.setItem("periods", JSON.stringify([...docSnap.data().periods]));
-                setDontRedirect(true);
-            } else {
-                // doc.data() will be undefined in this case
-                localStorage.setItem("hasAdded", "false");
-                setDontRedirect(false);
-            }
-            setLoading(false);
-        };
-
-        checkData();
-        
-    }, []);
-
+   
     return (
         <>
             <Suspense fallback={<Loading />}>
@@ -65,22 +39,11 @@ const AppRoutes = () => {
                         }
                     />
                     <Route
-                        index
                         exact path='/'
                         element={
                             <>
-                                {!dontRedirect ? (
-                                    loading ? (
-                                        <Loading />
-                                    ) : (
-                                        <Setting init={true} setDontRedirect = {setDontRedirect}/>
-                                    )
-                                ) : (
-                                    <>
-                                        <Navbar />
-                                        <Home />
-                                    </>
-                                )}
+                                <Navbar />
+                                <Home />
                             </>
                         }
                     />
@@ -94,7 +57,6 @@ const AppRoutes = () => {
                         path='/static-map'
                         element={
                             <>
-                                <Navbar />
                                 <StaticMap />
                             </>
                         }
@@ -104,6 +66,7 @@ const AppRoutes = () => {
                         path='/settings'
                         element={
                             <>
+                                <Navbar type = {1} />
                                 <Setting init={false} />
                             </>
                         }
@@ -120,6 +83,16 @@ const AppRoutes = () => {
                     />
                     <Route 
                         exact
+                        path='/utilities'
+                        element={
+                            <>
+                                <Navbar />
+                                <Utilities />
+                            </>
+                        }
+                    />
+                    <Route 
+                        exact
                         path='/version'
                         element={
                             <>
@@ -130,8 +103,11 @@ const AppRoutes = () => {
                     />
 
                 </Routes>
-
+                
             </Suspense>
+
+            <AddToMobile hasAdded = {hasAdded} setHasAdded = {setHasAdded} />
+
         </>
     );
 };

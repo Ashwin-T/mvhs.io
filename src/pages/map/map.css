@@ -64,6 +64,15 @@
     justify-content: center;
 }
 
+.mapNav{
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background-color: whitesmoke;
+    padding: 0.5rem;
+    border-radius: 1rem;
+}
+
 .controlContainer {
 
     position: absolute;

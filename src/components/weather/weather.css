@@ -1,0 +1,23 @@
+.weather-container{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: -1rem;
+    opacity: 0.8;
+    width: 15vw;
+}
+
+.weather-container h1{
+    font-size: 2.5rem;
+}
+
+.weather-container svg{
+    opacity: 0.75;
+}
+
+.weather-container h2{
+    font-size: 1.75rem;
+}

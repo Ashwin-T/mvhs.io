@@ -1,25 +1,21 @@
-import { useEffect, useState } from "react";
-import { getAuth } from "firebase/auth";
-import { FaGraduationCap } from "react-icons/fa";
-import { doc, getFirestore, setDoc, getDoc } from "firebase/firestore";
+import { useEffect, useState, useRef } from "react";
+
 import { useNavigate } from "react-router-dom";
 import Alert from "@mui/material/Alert";
 
 import "./setting.css";
 
 import * as roomData from "../../data/Rooms.json";
-import * as gradData from "../../data/GraduationData.json";
 
 import Loading from "../../components/loading/Loading";
-import Navbar from "../../components/navbar/Navbar";
-import AddToMobile from "../../components/addToMobile/AddToMobile";
 
 const Settings = ({ init, setDontRedirect  }) => {
     //settings have preview of graduation year, and schecule of rooms
 
-    const navigate = useNavigate();
 
-    const [gradYear, setGradYear] = useState("");
+    const topRef = useRef('')
+    const [name, setName] = useState("");
+    const [studentID, setStudentID] = useState("");
 
     const [periodOne, setPeriodOne] = useState("");
     const [periodTwo, setPeriodTwo] = useState("");
@@ -37,12 +33,11 @@ const Settings = ({ init, setDontRedirect  }) => {
     const [periodSixStyle, setPeriodSixStyle] = useState("");
     const [periodSevenStyle, setPeriodSevenStyle] = useState("");
 
-    const [gradYearStyle, setGradYearStyle] = useState("");
+    const [nameStyle, setNameStyle] = useState("");
+    const [studentIDStyle, setStudentIDStyle] = useState("");
 
     const [title, setTitle] = useState("Settings");
     const styleName = init ? "init" : "";
-
-    const db = getFirestore();
 
     const [error, setError] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
@@ -58,32 +53,30 @@ const Settings = ({ init, setDontRedirect  }) => {
         setLoading(true);
         if (init) {
             setTitle("Let's Set Up");
-        }
-
+        }   
         const getData = async () => {
-            const docRef = doc(db, "users", getAuth().currentUser.uid);
-            const docSnap = await getDoc(docRef);
-
-            if (docSnap.exists()) {
-                setGradYear(docSnap.data().gradYear);
-                setPeriodOne(docSnap.data().periods[0]);
-                setPeriodTwo(docSnap.data().periods[1]);
-                setPeriodThree(docSnap.data().periods[2]);
-                setPeriodFour(docSnap.data().periods[3]);
-                setPeriodFive(docSnap.data().periods[4]);
-                setPeriodSix(docSnap.data().periods[5]);
-                setPeriodSeven(docSnap.data().periods[6]);
-
-                localStorage.setItem("periods", JSON.stringify(docSnap.data().periods));
-            } else {
-                // doc.data() will be undefined in this case
+            const user = JSON.parse(localStorage.getItem("mvhsio-user"));
+            if (user !== null) {
+                setName(user.name);
+                setStudentID(user.id);
+                setPeriodOne(user.periods[0]);
+                setPeriodTwo(user.periods[1]);
+                setPeriodThree(user.periods[2]);
+                setPeriodFour(user.periods[3]);
+                setPeriodFive(user.periods[4]);
+                setPeriodSix(user.periods[5]);
+                setPeriodSeven(user.periods[6]);
             }
+            else{
+
+            }
+
             setLoading(false);
-        };
-        
+
+        }
         getData();
 
-    }, [init, db]);
+    }, [init]);
 
     const handleRoomCheck = (roomNumber) => {
         return roomData.features.some((room) => room.properties.name === roomNumber || room.properties.name2 === roomNumber);
@@ -92,23 +85,26 @@ const Settings = ({ init, setDontRedirect  }) => {
     const submit = async () => {
         setLoading(true);
         const periods = [periodOne, periodTwo, periodThree, periodFour, periodFive, periodSix, periodSeven];
-        await setDoc(doc(db, "users", getAuth().currentUser.uid), {
-            name: getAuth().currentUser.displayName,
-            periods: periods,
-            gradYear: "" + Math.floor(gradYear),
-        });
+        
         localStorage.setItem("allow", "true");
-        localStorage.setItem("periods", JSON.stringify([...periods]));
 
-        const isFreshmen = gradYear === gradData.freshmanGraduationYear ? true : false;
-        localStorage.setItem("freshmen", isFreshmen);
+        const user = {
+            name: name,
+            id: studentID,
+            periods: periods
+        }
+        
+        localStorage.setItem("mvhsio-user", JSON.stringify(user));
         setError(false);
-        navigate("/");
         setLoading(false);
         
         if (init) {
             setDontRedirect(true)
         }
+
+        topRef.current.scrollIntoView({
+            behavior: "smooth"
+        })
     };
 
     const changePage = () => {
@@ -120,7 +116,8 @@ const Settings = ({ init, setDontRedirect  }) => {
         setPeriodFiveStyle("");
         setPeriodSixStyle("");
         setPeriodSevenStyle("");
-        setGradYearStyle("");
+        setNameStyle("");
+        setStudentIDStyle("");
 
         if (periodOne === "" || periodTwo === "" || periodThree === "" || periodFour === "" || periodFive === "" || periodSix === "" || periodSeven === "") {
             handleError("Please fill out all periods");
@@ -145,9 +142,13 @@ const Settings = ({ init, setDontRedirect  }) => {
             if(periodSeven === ""){
                 setPeriodSevenStyle("errorUnderline");
             }
-            if(gradYear === ""){
-                setGradYearStyle("errorUnderline");
+            if(name === ""){
+                setNameStyle("errorUnderline");
             }
+            if(studentID === "" || studentID.length !== 9 || !studentID.includes("1000")){
+                setStudentIDStyle("errorUnderline");
+            }
+
             return;
         }
         if (!handleRoomCheck(periodOne) || !handleRoomCheck(periodTwo) || !handleRoomCheck(periodThree) || !handleRoomCheck(periodFour) || !handleRoomCheck(periodFive) || !handleRoomCheck(periodSix) || !handleRoomCheck(periodSeven)) {
@@ -176,9 +177,12 @@ const Settings = ({ init, setDontRedirect  }) => {
             }
             return;
         }
-        if (gradYear === '' || gradYear > gradData.freshmanGraduationYear || gradYear < gradData.currentGraduationYear) {
-            handleError("Please enter a valid graduation year");
-            setGradYearStyle("errorUnderline");
+        if (name === '' ) {
+            handleError("Please enter your name");
+            return;
+        }
+        if (studentID === '' || studentID.length !== 9 || !studentID.includes("1000")) {
+            handleError("Please enter a valid student ID");
             return;
         }
         submit();
@@ -187,10 +191,9 @@ const Settings = ({ init, setDontRedirect  }) => {
     return (
         <>
 
+            <div style = {{position: 'absolute', top: '0'}} ref = {topRef} />
             {!loading ? 
             <>
-                {!init && <Navbar type = {1} />}
-
                 <div className={"setting-container " + styleName}>
                     <div className='year-container'>
                         <div className='main-resources-container' style={{ marginLeft: 2 + "rem" }}>
@@ -199,10 +202,16 @@ const Settings = ({ init, setDontRedirect  }) => {
                         </div>
 
                         <div className='year-sub-container'>
-                            <h2 className= {gradYearStyle}>
-                                What Year Do You Graduate <FaGraduationCap size={40} />?
+                            <h2 className= {nameStyle}>
+                                What is your name?
                             </h2>
-                            <input type='number' placeholder='2022' value={gradYear} onChange={(e) => setGradYear(e.target.value)} />
+                            <input type='text' placeholder='John Doe' value={name} onChange={(e) => setName(e.target.value)} />
+                            <br />
+                            <br />
+                            <h2 className= {studentIDStyle}>
+                                What is your student ID number?
+                            </h2>
+                            <input type='text' placeholder='100024247' value={studentID} onChange={(e) => setStudentID(e.target.value)} />
                         </div>
                     </div>
                     <div className='schedule-container'>
@@ -258,14 +267,15 @@ const Settings = ({ init, setDontRedirect  }) => {
                         Submit
                     </button>
                 </div>
-
-                {!init && window.innerWidth <= 786 &&
-                    <div style = {{width: '100%'}} className="flexbox column center">
-                        <AddToMobile />
-                    </div>
-                }
             </>
             : <Loading  />}
+
+            <center style={{margin: '0 0.5rem'}}> 
+                <p>Fill out your information above to enable customization and features such as form autofill, schedule router, and more. No data is saved online. It is cached locally on your device.</p>
+            </center>
+            
+            <div className = 'bottom-margin' />
+    
         </>
     );
 };

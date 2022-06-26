@@ -1,16 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { getAuth } from "firebase/auth";
-import { useAuthState } from "react-firebase-hooks/auth";
-
-import Login from "./pages/login/Login";
-import Loading from "./components/loading/Loading";
 import AppRoutes from "./pages/Routes";
-import {app} from "./tools/Firebase";
 import { motion } from "framer-motion/dist/framer-motion";
-
+import {app} from './tools/Firebase'
 const App = () => {
-    const auth = getAuth(app);
-    const [user, loading, error] = useAuthState(auth);
+   
     const [allow, setAllow] = useState(false);
 
     useEffect(() => {
@@ -42,7 +35,7 @@ const App = () => {
 
     return (
         <>
-          {!loading ? !error ? !allow ? 
+          {!allow ? 
     
             <div className= 'onLoad flexbox column center'>
               <motion.img 
@@ -51,9 +44,9 @@ const App = () => {
               initial="hidden"
               animate="visible"
               />
-            </div> 
+            </div>
     
-            : user ? <AppRoutes/> : <Login />: <p>I'll be honest, something broke and I can't tell what. Try Refreshing hopefull that will work</p> : <Loading />}
+            :  <AppRoutes/>}
         </>
       );
     };

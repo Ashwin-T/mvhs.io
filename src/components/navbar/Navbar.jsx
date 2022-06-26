@@ -1,44 +1,37 @@
-import { Link, useNavigate } from "react-router-dom";
-import { getAuth } from "@firebase/auth";
-import { MdQuestionAnswer, MdSettings } from "react-icons/md";
-import { FaHandsHelping } from "react-icons/fa";
+import { Link } from "react-router-dom";
+import { MdSettings } from "react-icons/md";
 import { SiGooglemaps } from "react-icons/si";
-import { useLayoutEffect, useState } from "react";
-import { doc, getDoc, getFirestore } from "firebase/firestore";
-
-import Popover from "@mui/material/Popover";
-
-import * as gradData from "../../data/GraduationData.json";
-
+import {AiFillHome} from 'react-icons/ai';
+import {ImWrench} from 'react-icons/im';
+import {HiLink} from 'react-icons/hi'
+import {useState, useEffect} from 'react';
 import "./navbar.css";
-
 
 
 const Navbar = () => {
 
-    const auth = getAuth();
-    const [freshmen, setFreshmen] = useState(false);
+    const [width, setWidth] = useState(window.innerWidth);
 
-    useLayoutEffect(() => {
-        const getData = async () => {
-            const docRef = doc(getFirestore(), "users", auth.currentUser.uid);
-            const docSnap = await getDoc(docRef);
+    useEffect(() => {
+        
+        window.addEventListener("orientationchange", function(event) {
+            setWidth(window.innerWidth);
+        });
 
-            if (docSnap.exists()) {
-                if (docSnap.data().gradYear === gradData.freshmanGraduationYear) {
-                    setFreshmen(true);
-                    localStorage.setItem("freshmen", "true");
-                } else {
-                    setFreshmen(false);
-                    localStorage.setItem("freshmen", "false");
-                }
-            } else {
-                // doc.data() will be undefined in this case
-            }
-        };
+        window.addEventListener('resize', function(event){
+            setWidth(window.innerWidth)
+        });
 
-        getData();
-    }, []);
+        return () => {
+            window.removeEventListener("orientationchange", function(event) {
+                setWidth(window.innerWidth);
+            });
+            window.removeEventListener('resize', function(event){
+                setWidth(window.innerWidth)
+            });
+        }
+
+    }, [window.innerWidth, window.innerHeight, window.orientation]);
 
     const content = [
         {
@@ -48,68 +41,96 @@ const Navbar = () => {
         },
         {
             name: "Resources",
-            icon: <FaHandsHelping size={35} />,
+            icon: <HiLink size={35} />,
             link: "/resources",
+        },
+        {
+            name: "Utilities",
+            icon: <ImWrench size={35} />,
+            link: "/utilities",
         },
         {
             name: "Settings",
             icon: <MdSettings size={35} />,
             link: "/settings",
-        },
+        }
     ];
 
-    const [anchorEl, setAnchorEl] = useState(null);
-    const [open, setOpen] = useState(false);
-
-    const handleOpen = (e) => {
-        setOpen(true);
-        setAnchorEl(e.currentTarget);
-    };
+    const mobileContent = [
+        {
+            name: "Map",
+            icon: <SiGooglemaps size={35} />,
+            link: "/map",
+        },
+        {
+            name: "Resources",
+            icon: <HiLink size={35} />,
+            link: "/resources",
+        },
+        {
+            name: "Home",
+            icon: <AiFillHome size={35} />,
+            link: "/",
+        },
+        {
+            name: "Utilities",
+            icon: <ImWrench size={35} />,
+            link: "/utilities",
+        },
+        {
+            name: "Settings",
+            icon: <MdSettings size={35} />,
+            link: "/settings",
+        }
+    ];
     
-    const handleClose = () => {
-        setAnchorEl(null);
-        setOpen(false);
-    };
+    const DesktopNavBar = () => {
+        return (
+            <div className='nav-wrapper'>
+                <nav className='default'>
+                    <Link to='/' className='home-link'>
+                        <img alt='logo' src='images/logoNav.png' />
+                    </Link>
+                    <div className='icon-wrapper'>
+                        {content.map((item, index) => {
+                            return (    
+                                <Link key={index} className={window.location.pathname === item.link ? 'active' : 'link'} to={item.link}>
+                                    {item.icon}
+                                </Link>
+                            );
+                        })}
+                    </div>
+                </nav>
+            </div>
+        );
+    }
+
+    const MobileNavBar = () => {
+        return (
+            <div className='nav-wrapper'>
+                <footer className='mobile-nav'>
+                    <div className='icon-wrapper'>
+                        {
+                            mobileContent.map((item, index) => {
+                                return (    
+                                    <Link key={index} className={window.location.pathname === item.link ? 'active' : 'link'} to={item.link}>
+                                        {item.icon}
+                                    </Link>
+                                );
+                            })
+                        }
+                    </div>
+                </footer>
+            </div>
+        )
+    }
 
     return (
-        <div className='nav-wrapper'>
-            <nav className='default'>
-                <Link to='/' className='home-link'>
-                    <img alt='logo' src='images/logoNav.png' />
-                </Link>
-                <div className='icon-wrapper'>
-                    {content.map((item, index) => {
-                        return (
-                            <Link key={index} className='link' to={item.link}>
-                                {item.icon}
-                            </Link>
-                        );
-                    })}
-
-                    {freshmen && (
-                        <a href='https://mvhs-orientation.netlify.app/' target='_blank' rel='noreferrer'>
-                            <MdQuestionAnswer size={35} />
-                        </a>
-                    )}
-                    <Popover
-                        open={open}
-                        anchorEl={anchorEl}
-                        onClose={handleClose}
-                        anchorOrigin={{
-                            vertical: "Bottom",
-                            horizontal: "Right",
-                        }}>
-                        <button onClick={()=>auth.signOut()} className='popover-close'>
-                            Sign Out
-                        </button>
-                    </Popover>
-                    <button onClick={handleOpen} className='hello-world2'>
-                        <img className='profile' alt='profile' src={auth.currentUser.photoURL} />
-                    </button>
-                </div>
-            </nav>
-        </div>
-    );
+        <>
+            {width > 768 ? <DesktopNavBar /> : <MobileNavBar />}
+        </>
+    )
+   
 };
 
 export default Navbar;

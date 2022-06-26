@@ -5,13 +5,13 @@ import mapboxgl from 'mapbox-gl';
 import MapboxWorker from 'worker-loader!mapbox-gl/dist/mapbox-gl-csp-worker';
 import { FaRoute, FaDirections, FaParking, FaHome } from "react-icons/fa";
 import {MdMap, MdDirectionsBike} from 'react-icons/md';
-import {ImCross} from 'react-icons/im';
+import {ImCross, ImWrench} from 'react-icons/im';
+
 import { IoIosNavigate } from "react-icons/io";
 import {RiMenuLine, RiMenuUnfoldLine} from 'react-icons/ri';   
 import {GiVendingMachine} from 'react-icons/gi';
-import {VscSignOut} from 'react-icons/vsc';
 import{GrRestroom} from 'react-icons/gr';
-import { BsFillPeopleFill, BsFillChatTextFill} from "react-icons/bs";
+import { BsFillPeopleFill } from "react-icons/bs";
 import { FiSettings } from "react-icons/fi";
 
 import { useNavigate } from "react-router-dom";
@@ -25,6 +25,7 @@ import MarkerPointsSchedule from "./MarkerPointsSchedule";
 import Construction from "./Construction";
 import * as roomData from "../../data/Rooms.json";
 import * as otherData from "../../data/Other.json";
+
 import Box from '@mui/material/Box';
 import List from '@mui/material/List';
 import Divider from '@mui/material/Divider';
@@ -32,7 +33,6 @@ import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import SwipeableDrawer from '@mui/material/SwipeableDrawer';
-import {getAuth} from 'firebase/auth';
 
 import { mapboxToken } from "../../tools/Secrets";
 import "./map.css";
@@ -60,7 +60,36 @@ const Map = () => {
     const [submittedRoom, setSubmittedRoom] = useState(false); 
     const [submittedSchedule, setSubmittedSchedule] = useState(false);
 
-    const [viewPort, setViewPort] = useState({}); // sets initial value of 'view port' to empty js object. viewport will help us setd
+    const calculateZoom = () => {
+        //this sets the zoom of the map so it looks ok on mobile and computer
+        if (window.innerWidth <= 768 ) {
+            // 768 is the borderish from phone to computer
+            return 16.25;
+        }
+        return 17;
+    };
+
+    const calculateCenter = () => {
+        //this sets the center of the map so it looks ok on mobile and computer
+        if (window.innerWidth <= 768) {
+            // 768 is the borderish from phone to computer
+            return -122.06678308687613;
+        }
+        return -122.06656285921868;
+    };
+
+    
+    const lon = calculateCenter();
+    const zoomX = calculateZoom();
+
+    const [viewPort, setViewPort] = useState({
+        latitude: 37.360205578662605,
+        longitude: lon,
+        zoom: zoomX,
+        width: "100vw",
+        height: "100vh",
+        bearing: 90,
+    }); // sets initial value of 'view port' to empty js object. viewport will help us setd
 
     const [currentRoom, setCurrentRoom] = useState({});
     const [findingRoom, setFindingRoom] = useState({});
@@ -96,27 +125,6 @@ const Map = () => {
         setErrorMessage(message);
     }
 
-    const calculateZoom = () => {
-        //this sets the zoom of the map so it looks ok on mobile and computer
-        if (window.innerWidth <= 768 ) {
-            // 768 is the borderish from phone to computer
-            return 16.25;
-        }
-        return 17;
-    };
-
-    const calculateCenter = () => {
-        //this sets the center of the map so it looks ok on mobile and computer
-        if (window.innerWidth <= 768) {
-            // 768 is the borderish from phone to computer
-            return -122.06678308687613;
-        }
-        return -122.06656285921868;
-    };
-
-    const lon = calculateCenter();
-    const zoomX = calculateZoom();
-
     useEffect(() => {
         setViewPort({
             latitude: 37.360205578662605,
@@ -125,8 +133,8 @@ const Map = () => {
             width: "100vw",
             height: "100vh",
             bearing: 90,
-        });
-
+        })
+       
         window.addEventListener("orientationchange", function(event) {
             setOrientation(window.orientation);
             setWidth(window.innerWidth);
@@ -150,7 +158,7 @@ const Map = () => {
             });
         }
 
-    }, [zoomX, lon, width, height, orientation, window.innerWidth, window.innerHeight, window.orientation]); // the useEffect will run on start-up and add data to the viewport object
+    }, [window.innerWidth, window.innerHeight, window.orientation]); // the useEffect will run on start-up and add data to the viewport object
 
 
     const formChange1 = (room) => {
@@ -233,31 +241,38 @@ const Map = () => {
             setSubmittedRoom(false);
 
             if(schedule.length === 0){
-                const periodsLocal = JSON.parse(localStorage.getItem("periods"));
-                await getPeriodsOnDay(new Date(moment().format('L'))).then((result) => {
-                    let resultArr = [];
-                    let roomObjects = [];
+                const userObj = JSON.parse(localStorage.getItem("mvhsio-user"))
 
-                    setRawSchedule(result);
-                    for (let i = 0; i < result.length; i++) {
-                        resultArr.push(periodsLocal[result[i].period - 1]);
-                    }
-
-                    for (let i = 0; i < resultArr.length; i++) {
-                        if (resultArr[i] !== undefined) {
-                            roomData.features.forEach((room) => {
-                                if (room.properties.name === resultArr[i] || room.properties.name2 === resultArr[i]) {
-                                    roomObjects.push(room);
-                                }
-                            });
+                if(userObj !== null){
+                    const periodsLocal = userObj.periods;
+                    await getPeriodsOnDay(new Date()).then((result) => {
+                        let resultArr = [];
+                        let roomObjects = [];
+    
+                        setRawSchedule(result);
+                        for (let i = 0; i < result.length; i++) {
+                            resultArr.push(periodsLocal[result[i].period - 1]);
                         }
-                    }        
-                    setSchedule(roomObjects);
-                    
-                });
-            }
-
+    
+                        for (let i = 0; i < resultArr.length; i++) {
+                            if (resultArr[i] !== undefined) {
+                                roomData.features.forEach((room) => {
+                                    if (room.properties.name === resultArr[i] || room.properties.name2 === resultArr[i]) {
+                                        roomObjects.push(room);
+                                    }
+                                });
+                            }
+                        }        
+                        setSchedule(roomObjects);
+                        
+                    })
+                    .catch(()=>{
+                        
+                    })
+                    }
+                }
         
+
             setShowPopups(!showPopups);
             setSingleDirectionStyle({ color: "dodgerblue" });
         }
@@ -274,59 +289,44 @@ const Map = () => {
         setScheduleDirectionToggle(!scheduleDirectionToggle);
     };
 
-    const Drawer = () => {
+    
+    const DrawerList = () => {
         return(
-            <Box
-          role="presentation"
-        >
-          <List>
+            <>
+                <List>
               <ListItem button onClick = {()=>navigate('/')}>
                 <ListItemIcon>
-                    <FaHome style={{ color: "black" }} size={30} />
+                    <FaHome style={{ color: "black" }} size={35} />
                 </ListItemIcon>
                 <ListItemText primary={'Home'} />
               </ListItem>
-
               <ListItem button onClick = {()=> setShowDrawer(false)}>
                 <ListItemIcon>
-                    <FaDirections size = {30} style = {{color: 'dodgerblue' }}/>
+                    <FaDirections size={35} style = {{color: 'dodgerblue' }}/>
                 </ListItemIcon>
                 <ListItemText primary={'Map'} />
               </ListItem>
-
               <ListItem button onClick = {()=>navigate('/resources')}>
                 <ListItemIcon>
-                    <BsFillPeopleFill style={{ color: "#D7BE69" }} size={30} />
+                    <BsFillPeopleFill style={{ color: "#D7BE69" }} size={35} />
                 </ListItemIcon>
                 <ListItemText primary={'Resources'} />
               </ListItem>
-
-              <ListItem button onClick = {()=>navigate('/settings')}>
-                <ListItemIcon>
-                    <FiSettings style={{ color: "grey" }} size={30} />
-                </ListItemIcon>
-                <ListItemText primary={'Settings'} />
-              </ListItem>
-
-            {localStorage.getItem("freshmen") === "true" && (
-                <ListItem button onClick = {()=>window.open('https://mvhs-orientation.netlify.app/', "_blank")}>
+                <ListItem button onClick = {()=>navigate('/utilities')}>
                     <ListItemIcon>
-                        <BsFillChatTextFill style={{ color: "green" }} size={30} />
+                        <ImWrench style = {{color: 'darkgrey'}} size = {35} />
                     </ListItemIcon>
-                    <ListItemText primary={'Chat'} />
+                    <ListItemText primary={'Utilities'} />
                 </ListItem>
-            )}
-            
-
+                <ListItem button onClick = {()=>navigate('/settings')}>
+                    <ListItemIcon>
+                        <FiSettings style={{ color: "grey" }} size={35} />
+                    </ListItemIcon>
+                    <ListItemText primary={'Settings'} />
+                </ListItem>
           </List>
           <Divider />
           <List>
-              <ListItem button onClick = {()=> getAuth().signOut()}>
-                <ListItemIcon>
-                    <VscSignOut style={{ color: "red" }} size={30}/>
-                </ListItemIcon>
-                <ListItemText primary={'Sign Out'} />
-              </ListItem>
               <ListItem button onClick = {()=> setShowDrawer(false)}>
                 <ListItemIcon>
                     <RiMenuUnfoldLine size = {30}/>
@@ -334,7 +334,34 @@ const Map = () => {
                 <ListItemText primary={'Go Back'} />
               </ListItem>
           </List>
-        </Box>
+            </>
+        )
+    }
+
+
+    const Drawer = () => {
+        return(
+            <>
+                {
+                    window.innerWidth > 768 ?
+                    <Box
+                    role="presentation"
+                    >
+                        <DrawerList />
+                    </Box>
+
+                    :
+
+                    <Box
+                    role="presentation"
+                    width="50vw"
+                    >
+                        <DrawerList />
+
+                    </Box>
+                   
+                }
+            </>
         )
     }
 
@@ -347,8 +374,28 @@ const Map = () => {
                 onViewportChange={(viewPort) => setViewPort(viewPort)}
             >
                 
-            {height > 414 ? <Navbar /> : <SwipeableDrawer disableBackdropTransition={!iOS} disableDiscovery={iOS} open = {showDrawer} anchor={'left'}
-            onClose={() => setShowDrawer(false)} onOpen={() => setShowDrawer(true)}><Drawer /></SwipeableDrawer>}
+                {width < 786 ?
+                    <div className='mapNav flexbox center column'>
+                        <button className='controlButton' onClick = {()=> setShowDrawer(true)}>
+                            <RiMenuLine size={35}/>
+                        </button>
+                    </div>
+
+                    :
+
+                    <>
+                        {
+                            height > 414 &&
+                            <Navbar />
+                        }
+                    </>
+                
+                }
+
+                <SwipeableDrawer disableBackdropTransition={!iOS} disableDiscovery={iOS} open = {showDrawer} anchor={'left'}
+                onClose={() => setShowDrawer(false)} onOpen={() => setShowDrawer(true)}><Drawer /></SwipeableDrawer>
+
+
                 {submittedRoom && <MarkerPointsOneWay currentRoom={currentRoom} findingRoom={findingRoom} ok = {submittedRoom}/>}
                 {submittedSchedule && <MarkerPointsSchedule schedule = {schedule} ok = {submittedSchedule} raw = {rawSchedule}/>}
 
@@ -396,10 +443,18 @@ const Map = () => {
 
                         <div className='flexbox column center controlContainer'>
                             <div className = 'flexbox' style = {{justifyContent: 'flex-start', marginBottom: '0.5rem'}} onClick = {()=>setScheduleDirectionToggle(true)}>
-                                <ImCross style = {{color: 'red'}}/>
+                                <span style = {{color: 'grey'}}>Hide</span>
                             </div>
-                            <h2>Daily Schedule Route</h2>
-                                <h3>Your Periods For Today!</h3>
+
+                            {
+                                JSON.parse(localStorage.getItem("mvhsio-user")) === null ? 
+                                    <Alert className = 'flexbox column center' variant="outlined" severity="info" sx = {{width: "75%"}}>
+                                        Update periods in <Link>Settings</Link> to access this feature.
+                                    </Alert>
+                                :
+                                <>
+                                    <h2>Daily Schedule Route</h2>
+                                    <h3>Your Periods For Today!</h3>
                                 {
                                     schedule.length === 0 ?
                                     <div>
@@ -414,6 +469,8 @@ const Map = () => {
                                     );
                                 })
                                 }
+                                </>
+                            }
                         </div>
                     }
 
@@ -424,7 +481,7 @@ const Map = () => {
                             {height <= 414 && 
                                 <div className='flexbox center column'>
                                     <button className='controlButton' onClick = {()=> setShowDrawer(true)}>
-                                        <RiMenuLine size={40}/>
+                                        <RiMenuLine size={35}/>
                                     </button>
                                 </div>
                             }
@@ -442,24 +499,24 @@ const Map = () => {
                                     });
                                 }}
                                 className='controlButton'>
-                                <IoIosNavigate size={40} />
+                                <IoIosNavigate size={35} />
                             </button>
                         </div>
 
                         <div className='flexbox center column'>
                             <button className='controlButton' onClick={handleSingleDirection}>
-                                <FaDirections size={40} style={singleDirectionStyle} />
+                                <FaDirections size={35} style={singleDirectionStyle} />
                             </button>
                         </div>
 
                         <div className='flexbox center column'>
                             <button className='controlButton' onClick={handleScheduleDirections}>
-                                <FaRoute size={40} style={scheduleDirectionStyle} />
+                                <FaRoute size={35} style={scheduleDirectionStyle} />
                             </button>
                         </div>
                         <div className="flexbox center column">
                             <button className='controlButton' onClick={()=>navigate('/static-map')}>
-                                <MdMap size={40}/>
+                                <MdMap size={35}/>
                             </button>
                         </div>
                     </div>
@@ -487,25 +544,25 @@ const Map = () => {
                                                 });
                                             }}
                                             className='controlButton'>
-                                            <IoIosNavigate size={40} />
+                                            <IoIosNavigate size={35} />
                                         </button>
                                         <p>Center</p>
                                     </div>
                                     <div className="control-button flexbox column center">
                                         <button className='controlButton' onClick={handleSingleDirection}>
-                                            <FaDirections size={40} style={singleDirectionStyle} />
+                                            <FaDirections size={35} style={singleDirectionStyle} />
                                         </button>
                                         <p>Navigate</p>
                                     </div>
                                     <div className="control-button flexbox column center">
                                         <button className='controlButton' onClick={handleScheduleDirections}>
-                                            <FaRoute size={40} style={scheduleDirectionStyle} />
+                                            <FaRoute size={35} style={scheduleDirectionStyle} />
                                         </button>
                                         <p>Daily Schedule</p>
                                     </div>
                                     <div className="control-button flexbox column center">
                                         <button className='controlButton' onClick={()=>navigate('/static-map')}>
-                                            <MdMap size={40}/>
+                                            <MdMap size={35}/>
                                         </button>
                                         <p>Static Map</p>
                                     </div>
@@ -535,8 +592,7 @@ const Map = () => {
                                     !scheduleDirectionToggle &&
                                     <div className='flexbox column center controlContainer'>
                                         <div className = 'flexbox center' style = {{justifyContent: 'flex-start', marginBottom: '0.5rem'}} onClick = {()=>setScheduleDirectionToggle(true)}>
-                                            <ImCross style = {{color: 'red'}}/>
-                                            <span style = {{marginLeft: "5px"}}>Hide</span>
+                                            <span style = {{color: 'grey'}}>Hide</span>
                                         </div>
                                         <h2>Daily Schedule Route</h2>
                                         <h3>Your Periods For Today!</h3>

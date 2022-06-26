@@ -1,5 +1,7 @@
 import {MdOutlineArrowBackIos} from 'react-icons/md'
+import './map.css'
 const StaticMap  = ()=> {
+    
     return (
         <>  
             <div className="flexbox back-arrow-wrapper">

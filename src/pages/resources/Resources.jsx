@@ -9,22 +9,16 @@ const Resources = () => {
 
     const links = [
         {
-            name: "Mvhs.io",
-            link: "https://mvhs.io",
-            description: "Mvhs.io is a versitle app for MVHS staff and students.",
-            image: "images/mvhsioLogo.png",
+            name: "Aeries",
+            link: "https://mvla.asp.aeries.net/student/LoginParent.aspx?page=default.aspx",
+            description: "Aeries is a school management and grading system for students and parents.",
+            image: "images/aeriesLogo.png",
         },
         {
             name: "Canvas",
             link: "https://mvla.instructure.com/",
             description: "Canvas is a web application that allows teachers to create and manage course content.",
             image: "images/canvasLogo.png",
-        },
-        {
-            name: "Aeries",
-            link: "https://mvla.asp.aeries.net/student/LoginParent.aspx?page=default.aspx",
-            description: "Aeries is a school management and grading system for students and parents.",
-            image: "images/aeriesLogo.png",
         },
         {
             name: "Community Resources",
@@ -65,7 +59,7 @@ const Resources = () => {
                         <h3>FAQ</h3>
                         {faqs.faqs.map((item, index) => {
                             return (
-                                <Accordion key = {index}>
+                                <Accordion key = {index} sx = {{borderRadius : '0.5rem'}}>
                                     <AccordionSummary expandIcon={<AiOutlineArrowDown />} aria-controls='panel1a-content' id='panel1a-header'>
                                         <h3>{item.faq}</h3>
                                     </AccordionSummary>
@@ -88,11 +82,7 @@ const Resources = () => {
                         })}
                     </div>
                 </div>
-                {window.innerWidth <= 786 &&
-                    <div style = {{width: '100%'}} className="flexbox column center">
-                        <AddToMobile />
-                    </div>
-                }
+                <div className = 'bottom-margin' />
             </div>
         </>
     );
