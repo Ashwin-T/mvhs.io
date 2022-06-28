@@ -1,0 +1,3 @@
+.barcode-container a{
+    color: var(--alternate-color) !important;
+}
